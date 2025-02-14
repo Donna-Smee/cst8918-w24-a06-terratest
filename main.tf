@@ -20,13 +20,16 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-
 # Define the subnet
 resource "azurerm_subnet" "webserver" {
   name                 = "${var.labelPrefix}A05Subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
+
+  depends_on = [
+    azurerm_virtual_network.vnet
+  ]
 }
 
 # Define network security group and rules
@@ -72,12 +75,26 @@ resource "azurerm_network_interface" "webserver" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.webserver.id
   }
+
+  lifecycle {
+    prevent_destroy = false  # Allow destruction of the resource
+  }
+
+  depends_on = [
+    azurerm_public_ip.webserver,
+    azurerm_subnet.webserver
+  ]
 }
 
 # Link the security group to the NIC
 resource "azurerm_network_interface_security_group_association" "webserver" {
   network_interface_id      = azurerm_network_interface.webserver.id
   network_security_group_id = azurerm_network_security_group.webserver.id
+
+  depends_on = [
+    azurerm_network_interface.webserver,
+    azurerm_network_security_group.webserver
+  ]
 }
 
 # Define the init script template
@@ -120,8 +137,16 @@ resource "azurerm_linux_virtual_machine" "webserver" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = file("~/.ssh/public_key.pub")
   }
 
   custom_data = data.cloudinit_config.init.rendered
+
+  depends_on = [
+    azurerm_network_interface.webserver
+  ]
+
+  lifecycle {
+    prevent_destroy = false  # Allow destruction of the resource
+  }
 }

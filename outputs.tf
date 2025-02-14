@@ -14,3 +14,19 @@ output "nic_name" {
 output "public_ip" {
   value = azurerm_linux_virtual_machine.webserver.public_ip_address
 }
+
+output "vm_nic" {
+  value = azurerm_linux_virtual_machine.webserver.network_interface_ids
+}
+
+output "nic_id" {
+  value = azurerm_network_interface.webserver.id
+}
+
+output "vm_version" {
+  value = azurerm_linux_virtual_machine.webserver.source_image_reference[0].version
+}
+
+output "vm_sku" {
+  value = azurerm_linux_virtual_machine.webserver.source_image_reference[0].sku
+}
